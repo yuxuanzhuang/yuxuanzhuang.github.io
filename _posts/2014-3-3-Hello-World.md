@@ -4,7 +4,7 @@ title: Hello Universe
 published: true
 ---
 
-Hello Universe
+Hello Universe.
 
 &
 

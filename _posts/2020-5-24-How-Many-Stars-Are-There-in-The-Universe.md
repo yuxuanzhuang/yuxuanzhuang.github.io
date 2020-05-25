@@ -4,6 +4,15 @@ published: true
 classes: wide
 ---
 
+{% capture fig_img %}
+![Foo]({{ "/assets/images/universe.jpg" | relative_url }})
+{% endcapture %}
+
+<figure>
+  {{ fig_img | markdownify | remove: "<p>" | remove: "</p>" }}
+  <figcaption>Photo by Snapwire.</figcaption>
+</figure>
+
 The `Universe` is the fundamental data structure of MDAnalysis. It contains all the topology and trajectory data of a simulation system. Normally, a `Universe` can be created from files:
 
 ```python

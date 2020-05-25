@@ -1,7 +1,7 @@
 ---
-layout: post
 title: How Many Stars Are There in The Universe?
 published: true
+classes: wide
 ---
 
 The `Universe` is the fundamental data structure of MDAnalysis. It contains all the topology and trajectory data of a simulation system. Normally, a `Universe` can be created from files:

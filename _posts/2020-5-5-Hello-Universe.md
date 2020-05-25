@@ -1,7 +1,7 @@
 ---
-layout: post
 title: Hello Universe
 published: true
+classes: wide
 ---
 
 Hello Universe.

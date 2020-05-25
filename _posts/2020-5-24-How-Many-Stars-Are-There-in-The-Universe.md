@@ -91,3 +91,7 @@ Looks not bad, huh? We just need to fix a few attributesâ€”if they are fixableâ€
 - [ChainReader cannot be pickled #1940](https://github.com/MDAnalysis/mdanalysis/issues/1940)
 
 Overall, in this project, I will implement the pickling support to create a parallel `Universe` with the same stars, well, for parallel analysis.
+
+## Reference 
+- [https://docs.python.org/3/library/pickle.html](https://docs.python.org/3/library/pickle.html)
+- [https://www.mdanalysis.org/UserGuide/index.html](https://www.mdanalysis.org/UserGuide/index.html)

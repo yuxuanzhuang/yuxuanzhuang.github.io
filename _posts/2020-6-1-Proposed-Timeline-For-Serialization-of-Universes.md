@@ -1,5 +1,5 @@
 --- 
-title: Proposed Timeline for Serialzation of Universes 
+title: Proposed Timeline for Serialization of Universes 
 published: true
 classes: wide
 ---

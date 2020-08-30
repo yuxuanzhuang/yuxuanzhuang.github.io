@@ -1,5 +1,5 @@
 ---
-title: Final Remarks on Serialization of Universe.
+title: Final Remarks on Serialization of Universe
 published: true
 classes: wide
 ---
@@ -13,7 +13,7 @@ classes: wide
   <figcaption>Photo by Snapwire.</figcaption>
 </figure>
 
-As we approach the exascale barrier, researchers are handling increasingly large volumes of molecular dynamics (MD) data. Whilst MDAnalysis is a flexible and relatively fast framework for complex analysis tasks in MD simulations, implementing a parallel computing framework would play a pivotal role in accelerating the time to solution for such large datasets. In this Google Summer of Code project ([https://summerofcode.withgoogle.com/projects/#5812065073102848](https://summerofcode.withgoogle.com/projects/#5812065073102848)), Yuxuan tried to touch on the basics to make sure the fundamental data structure of MDAnalysis—Universe can be serialized, and also streamlined the parallel framework.
+As we approach the exascale barrier, researchers are handling increasingly large volumes of molecular dynamics (MD) data. Whilst MDAnalysis is a flexible and relatively fast framework for complex analysis tasks in MD simulations, implementing a parallel computing framework would play a pivotal role in accelerating the time to solution for such large datasets. In this [Google Summer of Code project](https://summerofcode.withgoogle.com/projects/#5812065073102848), we tried to touch on the basics to make sure the fundamental data structure of MDAnalysis—Universe can be serialized, and also streamlined the parallel framework.
 
 ## Why and how do we serialize a Universe
 
@@ -30,8 +30,6 @@ Okay enough technical terms talking. More information on serialization can be fo
 ## Parallelizing Analysis
 
 So what's possible now in MDAnalysis? Well you still cannot do `analysis.run(n_cores=8)` since the `AnalysisBase` API is too broad and we don't really want to ruin your old scripts. What you can do now is use your favorite parallel tool freely (`multiprocessing`, `joblib`, `dask`, and etc.) on your personal analysis script. But before that, we should point out that per-frame parallel analysis normally won't reach the best performance; all the attributes (AtomGroup, Universe, and etc) need to be pickled. This might even take more time than your lightweight analysis! Besides, e.g. in dask, a huge amount of time is needed overhead to build a comprehensive dask graph with thousands of tasks. The strategy we take here is called split-apply-combine fashion (Read more about this here: [https://conference.scipy.org/proceedings/scipy2019/shujie_fan.html](https://conference.scipy.org/proceedings/scipy2019/shujie_fan.html)), in which we split the trajectory into multiple blocks, analysis is performed separately and in parallel on each block, then the results are gathered and combined. Let's have a look.
-
-### Parallelizing with multiprocessing
 
 we will calculate the radius of gyration in this case. It is defined as:
 
@@ -67,7 +65,7 @@ protein = u.select_atoms('protein')
 
 ```python
 n_frames = u.trajectory.n_frames
-n_blocks = n_jobs   #  it can be any realistic value (0<n_blocks<=n_jobs)
+n_blocks = n_jobs   #  it can be any realistic value (0<n_blocks<=n_jobs, n_jobs<=n_cpus)
 
 frame_per_block = n_frames // n_blocks
 blocks = [range(i * frame_per_block, (i + 1) * frame_per_block) for i in range(n_blocks-1)]
@@ -101,9 +99,9 @@ results = jobs.compute()
 
 How tasks are divided can be visualized by `jobs.visualize()` and a detailed task stream can be viewed from dask dashboard—Each green bar here represents a block analysis job.
 
-![Blog%20Post%20Final%20Evaluation%204a3ff5f7fc9c46f7ad8a4f3f2dcedce5/visualize_job.png](Blog%20Post%20Final%20Evaluation%204a3ff5f7fc9c46f7ad8a4f3f2dcedce5/visualize_job.png)
+![Visualize dask graph](/assets/images/final_remarks/visualize_job.png)
 
-![Blog%20Post%20Final%20Evaluation%204a3ff5f7fc9c46f7ad8a4f3f2dcedce5/Untitled.png](Blog%20Post%20Final%20Evaluation%204a3ff5f7fc9c46f7ad8a4f3f2dcedce5/Untitled.png)
+![Task stream](/assets/images/final_remarks/task_stream.png)
 
 - Combine the results
 
@@ -119,7 +117,7 @@ plt.ylabel('Radius of gyration (Å)')
 plt.xlabel('Frame')
 ```
 
-![Blog%20Post%20Final%20Evaluation%204a3ff5f7fc9c46f7ad8a4f3f2dcedce5/result.png](Blog%20Post%20Final%20Evaluation%204a3ff5f7fc9c46f7ad8a4f3f2dcedce5/result.png)
+![Radius of gyration results](/assets/images/final_remarks/result.png)
 
 A detailed UserGuide on how to parallelizing your analysis scripts can also be found here: [https://yuxuanzhuang.github.io/UserGuide/examples/analysis/custom_parallel_analysis.html](https://yuxuanzhuang.github.io/UserGuide/examples/analysis/custom_parallel_analysis.html). 
 
@@ -145,12 +143,35 @@ dask.compute(D_1, D_2, D_3, D_4...)  #  D_x as an individual analysis job.
 
 ## Conclusions
 
-These three months of GSoC project have been fun and fruitful. Thanks all my mentors, IAlibay, fiona-naughton, orbeckst, and richardjgowers, (also kain88-de and other developers) for their help, reviewing PRs, and providing great advice for this project. Now MDAnalaysis has a more streamlined way to build parallel code for the trajectory analysis. What's left to do is reaching a consensus on what the future parallel analysis API should look like, minimizing the memory usage and time for the serialization process, and conducting conclusive benchmarks on different parallel engines 
+These three months of GSoC project have been fun and fruitful. Thanks to all my mentors, @IAlibay, @fiona-naughton, @orbeckst, and @richardjgowers, (also @kain88-de and other developers) for their help, reviewing PRs, and providing great advice for this project. Now MDAnalaysis has a more streamlined way to build parallel code for the trajectory analysis. What's left to do is reaching a consensus on what the future parallel analysis API should look like, minimizing the memory usage and time for the serialization process, and conducting conclusive benchmarks on different parallel engines 
 
 ## Appendix
 
+### Benchmark
 The benchmark below was run with four AMD Opteron 6274 (64 cores in total). The test trajectories (9000 frames, 111815 atoms) were available at DOI [10.6084/m9.figshare.8202149](https://figshare.com/articles/Raw_data/6025748).
 
-Three test cases are conducted under the latest MDAnalysis and PMDA code (PR #136)— RMSD analysis,  a more compute-intensive RDF analysis, and the newly supported RMSD analysis with on-the-fly transformation (fit-rot-trans transformation in this case). All these cases show a strong scaling performance before 16 cores. (Black: Serial analysis, Green: colored by the number of blocks (from 1-64) used, darker means more blocks.)
+Three test cases are conducted under the latest MDAnalysis and PMDA code (PR #136)— RMSD analysis,  a more compute-intensive RDF analysis, and the newly supported RMSD analysis with on-the-fly transformation (fit-rot-trans transformation in this case). All these cases show a strong scaling performance before 16 cores. 
 
-![Blog%20Post%20Final%20Evaluation%204a3ff5f7fc9c46f7ad8a4f3f2dcedce5/benchmarking.png](Blog%20Post%20Final%20Evaluation%204a3ff5f7fc9c46f7ad8a4f3f2dcedce5/benchmarking.png)
+![Benchmark](/assets/images/final_remarks/benchmarking.png)
+
+(Black: serial analysis; Green: colored by the number of blocks (from 1-64), darker means more blocks)
+
+### Major merged PRs
+- [#2723](https://github.com/MDAnalysis/mdanalysis/pull/2723)
+	Basic implementation of Universe and trajectory serialization. Tests and documents.
+- [#2815](https://github.com/MDAnalysis/mdanalysis/pull/2815)
+	Refactor ChainReader and make it picklable
+- [#2893](https://github.com/MDAnalysis/mdanalysis/pull/2893)
+	Make AtomGroup picklable
+- [#2911](https://github.com/MDAnalysis/mdanalysis/pull/2911)
+	Fix old serialization bugs to DCD and XDR formats
+
+### PRs to be merged
+- [#2859](https://github.com/MDAnalysis/mdanalysis/pull/2859)
+	Serialization of transformations
+- [#132](https://github.com/MDAnalysis/pmda/pull/132)
+	Refactor PMDA with the new picklable Universe
+- [#136](https://github.com/MDAnalysis/pmda/pull/136)
+	New idea on how to refactor PMDA with dask.DaskMethodsMixin.
+- [#102](https://github.com/MDAnalysis/UserGuide/pull/102)
+	UserGuide on how users can write their own parallel code.
